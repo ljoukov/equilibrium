@@ -1,38 +1,67 @@
-# sv
+# Hackathorn
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+[https://devpost.com/software/equilibrium-sol](https://devpost.com/software/equilibrium-sol)
 
-## Creating a project
+## Inspiration
 
-If you're seeing this, you've probably already done this step. Congrats!
+Take a dentistry.
+The dentistry needs to buy various supplies pretty much all the time.
+Lets imagine rubber gloves are running out.
+Dentistry uses Equilibrium:SOL to negotiate best procurement conditions, escalating to owner if needed using AI Human.
+Transaction happens on Solana.
 
-```bash
-# create a new project in the current directory
-npx sv create
+## What it does
 
-# create a new project in my-app
-npx sv create my-app
-```
+Dentistry has **buyer agents** which gets triggered (eg supply runs low or customer influx anticipated) to make a purchase.
 
-## Developing
+First purchase preparation agent:
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+- researches the current market price for the product (Apify scraping Alibaba & Amazon)
+- uses LLM to cleanup and normalize pricing data (eg price per glove and minimum order size)
 
-```bash
-npm run dev
+Negotiation agent:
 
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
-```
+- talks to seller agents and negotiates the price/volume/timeline (without revealing all the info upfront)
 
-## Building
+Solana Contract:
 
-To create a production version of your app:
+- after negotiation buyer and sellers enter the contract on Solana (purchase)
 
-```bash
-npm run build
-```
+Human escalation:
 
-You can preview the production build with `npm run preview`.
+- If during negotiation buyer is stuck it uses Tavus to call the business owner and explains the isse
+- Business owner may abort or continue transaction
 
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+## How we built it
+
+Tools used:
+
+- All the code (Typescript, Svelte) runs on Render
+- Prompts, model, config management: LaunchDarkly
+- LLM interactions are recorded on Langtrace
+- Seller agents are authenticated on Stytch
+- Negotiation workflow is managed on Cloudflare:Workflows
+
+## Challenges we ran into
+
+- listings on Alibaba are confusing
+- hard to make LLMs negotiate without revealing all details
+
+## Accomplishments that we're proud of
+
+- Working end-to-end
+- Natural language negotiation and Solana contracts
+- Nice handling of escalations
+
+## What we learned
+
+Talking to AI human is cool
+Classic engineering problems (flags, cloud, scraping) are evergreen
+Agent authentication is important (thanks Stytch)
+Gemini is fast
+Solana is awesome
+Tracing LLMs is a must
+
+## What's next for Equilibrium:SOL
+
+It might end up in a real SaaS!
