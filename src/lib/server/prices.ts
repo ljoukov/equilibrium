@@ -1,6 +1,6 @@
 import { APIFY_TOKEN } from '$env/static/private';
 import { z } from 'zod';
-import { getModel } from './config';
+//import { getModel } from './config';
 
 export const productSchema = z.object({
 	title: z.string(),
@@ -41,7 +41,7 @@ export async function getPrices({
 	const min_price = Math.min(...products.map((p) => p.min_price));
 	const max_price = Math.max(...products.map((p) => p.max_price));
 
-	console.log('model', getModel());
+	//	console.log('model', getModel());
 
 	return { min_price, max_price };
 }

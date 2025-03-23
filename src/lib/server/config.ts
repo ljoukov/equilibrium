@@ -19,4 +19,11 @@ const context: LDContext = {
 	name: 'Sandy'
 };
 
-aiClient.
+const variables = { username: 'john' };
+
+const defaultValue = {
+	enabled: false
+};
+
+const result = aiClient.config(LAUNCH_DARKLY, context, defaultValue, variables);
+console.log({ result });

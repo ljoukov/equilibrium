@@ -1,16 +1,7 @@
-import {
-	Connection,
-	Keypair,
-	PublicKey,
-	Transaction,
-	TransactionInstruction,
-	sendAndConfirmTransaction,
-	SystemProgram,
-	LAMPORTS_PER_SOL
-} from '@solana/web3.js';
-import { Program, AnchorProvider, web3, BN, Wallet } from '@project-serum/anchor';
-import fs from 'fs';
-import path from 'path';
+import { Connection, Keypair, PublicKey, SystemProgram, LAMPORTS_PER_SOL } from '@solana/web3.js';
+import { Program, AnchorProvider, Wallet } from '@project-serum/anchor';
+import pkg from '@project-serum/anchor';
+const { BN } = pkg;
 
 // Define the marketplace program IDL (Interface Definition Language)
 // This would typically be imported from a generated file after building your Anchor program
@@ -183,55 +174,72 @@ export class MarketplaceContract {
 	}
 }
 
-// Example usage
-async function example() {
+async function requestAirdropWithRetry(
+	connection: Connection,
+	publicKey: PublicKey,
+	amount: number,
+	maxRetries: number = 3,
+	delayMs: number = 1000
+): Promise<string> {
+	for (let i = 0; i < maxRetries; i++) {
+		try {
+			const signature = await connection.requestAirdrop(publicKey, amount);
+			await connection.confirmTransaction(signature);
+			return signature;
+		} catch (error: any) {
+			if (i === maxRetries - 1) throw error;
+			if (error?.message?.includes('429')) {
+				console.log(`Rate limited, waiting ${delayMs}ms before retry ${i + 1}/${maxRetries}`);
+				await new Promise((resolve) => setTimeout(resolve, delayMs));
+				continue;
+			}
+			throw error;
+		}
+	}
+	throw new Error('Max retries reached for airdrop');
+}
+
+export async function purchase() {
 	// Setup connection to the Solana devnet
 	const connection = new Connection('https://api.devnet.solana.com', 'confirmed');
 
 	// Create keypairs for the participants
-	// In a real application, these would likely be loaded from a file or wallet
 	const buyer = Keypair.generate();
 	const seller1 = Keypair.generate();
 	const seller2 = Keypair.generate();
 
-	// Request airdrops for testing (on devnet)
-	const airdropBuyer = await connection.requestAirdrop(buyer.publicKey, 2 * LAMPORTS_PER_SOL);
-	await connection.confirmTransaction(airdropBuyer);
-
-	const airdropSeller1 = await connection.requestAirdrop(seller1.publicKey, 1 * LAMPORTS_PER_SOL);
-	await connection.confirmTransaction(airdropSeller1);
-
-	const airdropSeller2 = await connection.requestAirdrop(seller2.publicKey, 1 * LAMPORTS_PER_SOL);
-	await connection.confirmTransaction(airdropSeller2);
-
-	console.log(`Buyer pubkey: ${buyer.publicKey.toString()}`);
-	console.log(`Seller 1 pubkey: ${seller1.publicKey.toString()}`);
-	console.log(`Seller 2 pubkey: ${seller2.publicKey.toString()}`);
-
-	// Create a wallet interface for the payer (buyer in this case)
-	const payerWallet = new Wallet(buyer);
-
-	// Program ID would be the deployed Anchor program
-	const programId = 'YOUR_DEPLOYED_PROGRAM_ID'; // Replace with your actual program ID
-
-	// Create the marketplace contract instance
-	const marketplace = new MarketplaceContract(connection, payerWallet, programId);
+	console.log('Requesting airdrops (this may take a while)...');
 
 	try {
-		// Initialize the marketplace
+		// Request smaller amounts to avoid rate limiting
+		const airdropAmount = LAMPORTS_PER_SOL * 0.5; // Request 0.5 SOL instead of 2
+
+		// Sequential airdrops with delay
+		await requestAirdropWithRetry(connection, buyer.publicKey, airdropAmount);
+		console.log('Buyer airdrop successful');
+
+		await requestAirdropWithRetry(connection, seller1.publicKey, airdropAmount);
+		console.log('Seller 1 airdrop successful');
+
+		await requestAirdropWithRetry(connection, seller2.publicKey, airdropAmount);
+		console.log('Seller 2 airdrop successful');
+
+		console.log(`Buyer pubkey: ${buyer.publicKey.toString()}`);
+		console.log(`Seller 1 pubkey: ${seller1.publicKey.toString()}`);
+		console.log(`Seller 2 pubkey: ${seller2.publicKey.toString()}`);
+
+		const payerWallet = new Wallet(buyer);
+		const programId = 'CdX6x6CQm2n1mkTNsoCzKtKASg3No7LHDKD3dFd984PX';
+		const marketplace = new MarketplaceContract(connection, payerWallet, programId);
+
+		// Adjust prices to work with smaller amounts
 		await marketplace.initialize(buyer, seller1, seller2);
+		await marketplace.setMaxPrice(buyer, 0.4); // Reduced from 1.5
+		await marketplace.setSeller1Price(seller1, 0.45); // Reduced from 1.8
+		await marketplace.setSeller2Price(seller2, 0.3); // Reduced from 1.2
 
-		// Buyer sets max price of 1.5 SOL
-		await marketplace.setMaxPrice(buyer, 1.5);
-
-		// Sellers set their min prices
-		await marketplace.setSeller1Price(seller1, 1.8); // Higher than buyer's max
-		await marketplace.setSeller2Price(seller2, 1.2); // Lower than buyer's max
-
-		// Execute the transaction - should select seller2 as the winner
 		await marketplace.executeTransaction(buyer, seller1, seller2);
 
-		// Get and display the final state
 		const state = await marketplace.getMarketplaceState();
 		console.log('Final marketplace state:', state);
 
@@ -241,7 +249,7 @@ async function example() {
 					`Transaction completed! Winning seller: ${state.winningSellerIndex === 1 ? 'Seller 1' : 'Seller 2'}`
 				);
 				console.log(
-					`Transaction amount: ${state.winningSellerIndex === 1 ? state.seller1Price.toNumber() : state.seller2Price.toNumber()} lamports`
+					`Transaction amount: ${(state.winningSellerIndex === 1 ? state.seller1Price.toNumber() : state.seller2Price.toNumber()) / LAMPORTS_PER_SOL} SOL`
 				);
 			} else {
 				console.log("Transaction not completed. No seller met the buyer's price criteria.");
@@ -249,8 +257,6 @@ async function example() {
 		}
 	} catch (error) {
 		console.error('Error in marketplace example:', error);
+		throw error; // Re-throw to ensure errors are properly handled by the caller
 	}
 }
-
-// Run the example
-example().then(() => console.log('Example completed'));
