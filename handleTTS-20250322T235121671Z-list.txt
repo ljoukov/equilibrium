@@ -1,0 +1,2 @@
+file '/Users/yaroslavvolovich/Projects/hobby/equilibrium/handleTTS-20250322T235121671Z-speech-00000-of-00002.mp3'
+file '/Users/yaroslavvolovich/Projects/hobby/equilibrium/handleTTS-20250322T235121671Z-speech-00001-of-00002.mp3'

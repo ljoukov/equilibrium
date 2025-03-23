@@ -1,3 +1,5 @@
+import { runBuyer } from '$lib/server/buyer-agent';
+import { getPrices } from '$lib/server/prices';
 import type { Actions } from './$types';
 
 export const actions: Actions = {
@@ -11,7 +13,6 @@ export const actions: Actions = {
 			return value;
 		};
 		const product = getParam('product');
-		console.log({ product });
-		return { ok: true };
+		return await runBuyer({ product });
 	}
 };

@@ -3,7 +3,7 @@
 </script>
 
 <div class="container mx-auto px-4 py-8">
-    <h1 class="text-3xl font-bold text-gray-800 mb-8">Buyer Agents</h1>
+    <h1 class="text-3xl font-bold text-gray-800 mb-8">Buyer Facing Agent</h1>
     
     <form class="max-w-md" method="post">
         <div class="mb-4">
