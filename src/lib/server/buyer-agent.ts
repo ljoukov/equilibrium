@@ -1,11 +1,15 @@
+import { negotiate } from './negotiation';
 import { getPrices } from './prices';
+import { simulatePurchase } from './purchase';
 import { makeDialog } from './tts';
 
 export async function runBuyer({ product }: { product: string }) {
 	console.log('runBuyer', { product });
 	const { min_price, max_price } = await getPrices({ product });
 	console.log({ min_price, max_price });
-	await escalationDialog();
+	//await escalationDialog();
+	//await negotiate();
+	await simulatePurchase();
 	return { ok: true };
 }
 

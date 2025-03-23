@@ -1,3 +1,4 @@
+import { RIME_TOKEN } from '$env/static/private';
 import { concatAudio } from './ffmpeg';
 import { getTempFilePath, readUint8ArrayFromTempFile, writeUint8ArrayToTempFile } from './file';
 
@@ -8,7 +9,7 @@ async function tts({ text, speaker }: { text: string; speaker: Speaker }): Promi
 		method: 'POST',
 		headers: {
 			Accept: 'audio/mp3',
-			Authorization: 'Bearer B9SgdGuLmSQ73qk52TasVOtNPal4q8H_H_rzr_5MHO8',
+			Authorization: `Bearer ${RIME_TOKEN}`,
 			'Content-Type': 'application/json'
 		},
 		body: JSON.stringify({

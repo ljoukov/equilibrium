@@ -1,27 +1,22 @@
 import { LAUNCH_DARKLY } from '$env/static/private';
-import * as LaunchDarkly from '@launchdarkly/node-server-sdk';
+import { init, type LDContext } from '@launchdarkly/node-server-sdk';
+import { initAi, type LDAIClient } from '@launchdarkly/server-sdk-ai';
 
-const client = LaunchDarkly.init(LAUNCH_DARKLY);
+const ldClient = init(LAUNCH_DARKLY);
 
-client.once('ready', function () {
-	console.log('LaunchDarkly SDK successfully initialized!');
-});
+try {
+	await ldClient.waitForInitialization({ timeout: 10 });
+	// initialization complete
+} catch (error) {
+	// timeout or SDK failed to initialize
+}
 
-const context = {
+const aiClient: LDAIClient = initAi(ldClient);
+
+const context: LDContext = {
 	kind: 'user',
-	key: 'user-key-123abc',
+	key: 'example-user-key',
 	name: 'Sandy'
 };
 
-let model: string;
-
-client.on('ready', () => {
-	client.variation('model', context, false, function (err, value) {
-		console.log({ value });
-		model = value;
-	});
-});
-
-export function getModel(): string {
-	return model;
-}
+aiClient.
